@@ -37,7 +37,7 @@ func (r *Route) Bridge(b Bridge) *Route {
 func (v *Verb) Page(url string, file string) *Route {
 
 	// read the files
-	data, err := os.ReadFile(file)
+	data, err := os.ReadFile(relativeFilePath(v.Settings.Templates, file))
 	if err != nil {
 		panic(err)
 	}
@@ -66,7 +66,7 @@ func (v *Verb) Page(url string, file string) *Route {
 // using a pre-made htmx route.
 func (v *Verb) Component(file string, hx *htmx.Htmx) *Route {
 	// read the file contents
-	data, err := os.ReadFile(file)
+	data, err := os.ReadFile(relativeFilePath(v.Settings.Templates, file))
 	if err != nil {
 		panic(err)
 	}

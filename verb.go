@@ -23,9 +23,18 @@ type Verb struct {
 }
 
 type Settings struct {
-	Templates  string
-	Static     string
-	Bridges    []Bridge
+	// the path to the template directory where you are placing all your
+	// templates
+	Templates string
+
+	// the path to the publicly served static files.
+	Static string
+
+	// a way to inject data into all templates, this is useful for things like user sessions, etc.
+	Bridges []Bridge
+
+	// whether the templates should be reloaded on every request,
+	// useful for development.
 	LiveReload bool
 }
 
@@ -82,7 +91,7 @@ func (v *Verb) handle(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	if v.Settings.LiveReload {
-		data, err := os.ReadFile(route.originalFile)
+		data, err := os.ReadFile(relativeFilePath(v.Settings.Templates, route.originalFile))
 		if err != nil {
 			return err
 		}

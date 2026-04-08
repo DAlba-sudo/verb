@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"net/http"
 
+	"fmt"
 	"strings"
 )
 
@@ -30,6 +31,24 @@ const (
 	{{- else -}}
 		<div {{ template "attrs" . }}>{{ template "content" . }}</div>
 	{{- end -}}
+	`
+	hxWrapperV2 = `
+	 <%s style="padding: 0; margin: 0;"
+		{{- if and .Htmx.HxAjax (eq .Htmx.HxAjax.Method "none" ) -}}
+		hx-{{ .Htmx.HxAjax.Method }}="{{ .Htmx.HxAjax.URL }}"
+		{{- end }}
+		{{ if .Htmx.HxTrigger -}}
+		hx-trigger="{{ .Htmx.HxTrigger }}"
+		{{- end }}
+		{{ if .Htmx.HxTarget -}}
+		hx-target="{{ .Htmx.HxTarget }}"
+		{{- end }}
+		{{ if .Htmx.HxSwap -}}
+		hx-swap="{{ .Htmx.HxSwap }}"
+		{{- end }}
+		{{ if .Htmx.HxInclude -}}
+		hx-include="{{ .Htmx.HxInclude -}}"
+		{{- end -}}>{{ template "content" . }}</%s>
 	`
 
 	MethodGET    = "get"
@@ -121,7 +140,8 @@ func (h *Htmx) Classes(classes ...string) *Htmx {
 func (h *Htmx) Build(content string, funcs map[string]any) *template.Template {
 	// We define the base "htmx" template using the wrapper
 	// and then define the "content" template with the user's input.
-	t, err := template.New("htmx").Parse(hxWrapper)
+	htmxTemplateContainer := fmt.Sprintf(hxWrapperV2, h.HxContainerTag, h.HxContainerTag)
+	t, err := template.New("htmx").Parse(htmxTemplateContainer)
 	if err != nil {
 		panic(err)
 	}
