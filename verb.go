@@ -14,17 +14,28 @@ import (
 // Verb is designed to be easy to use and flexible,
 // allowing you to build web applications quickly and efficiently.
 type Verb struct {
-	Bridges   []Bridge
-	Templates string
-	Static    string
+	Settings Settings
 
 	routes map[string]*Route
 	router *pbf.Router
 	base   *template.Template
 }
 
-func New(address string, port int, base_path string) *Verb {
-	data, err := os.ReadFile(base_path)
+type Settings struct {
+	Templates string
+	Static    string
+	Bridges   []Bridge
+}
+
+func relativeFilePath(root, path string) string {
+	root = strings.TrimRight(root, "/")
+	path = strings.TrimLeft(path, "/")
+
+	return root + path
+}
+
+func New(address string, port int, s Settings) *Verb {
+	data, err := os.ReadFile(relativeFilePath(s.Templates, "base.html"))
 	if err != nil {
 		panic(err)
 	}
@@ -33,10 +44,15 @@ func New(address string, port int, base_path string) *Verb {
 	r.Address = address
 	r.Port = port
 
+	if s.Static != "" {
+		r.Mux().HandleFunc("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(s.Static))).ServeHTTP)
+	}
+
 	return &Verb{
-		router: r,
-		routes: make(map[string]*Route),
-		base:   template.Must(template.New("base").Parse(string(data))),
+		Settings: s,
+		router:   r,
+		routes:   make(map[string]*Route),
+		base:     template.Must(template.New("base").Parse(string(data))),
 	}
 }
 
@@ -67,7 +83,7 @@ func (v *Verb) handle(w http.ResponseWriter, r *http.Request) error {
 
 	// now we are going to run the global bridges, these are
 	// global to the entire app (middleware).
-	for _, bridge := range v.Bridges {
+	for _, bridge := range v.Settings.Bridges {
 		data, err := bridge.Data(w, r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
