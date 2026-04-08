@@ -16,9 +16,10 @@ import (
 type Verb struct {
 	Settings Settings
 
-	routes map[string]*Route
-	router *pbf.Router
-	base   *template.Template
+	functions map[string]any
+	routes    map[string]*Route
+	router    *pbf.Router
+	base      *template.Template
 }
 
 type Settings struct {

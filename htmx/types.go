@@ -111,7 +111,7 @@ func (h *Htmx) Include(include string) *Htmx {
 	return h
 }
 
-func (h *Htmx) Build(content string) *template.Template {
+func (h *Htmx) Build(content string, funcs map[string]any) *template.Template {
 	// We define the base "htmx" template using the wrapper
 	// and then define the "content" template with the user's input.
 	t, err := template.New("htmx").Parse(hxWrapper)
@@ -119,7 +119,11 @@ func (h *Htmx) Build(content string) *template.Template {
 		panic(err)
 	}
 
-	_, err = t.New("content").Parse(content)
+	if funcs != nil {
+		_, err = t.New("content").Funcs(funcs).Parse(content)
+	} else {
+		_, err = t.New("content").Parse(content)
+	}
 	if err != nil {
 		panic(err)
 	}

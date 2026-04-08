@@ -41,7 +41,7 @@ func (v *Verb) Page(url string, file string) *Route {
 	}
 
 	t := template.Must(v.base.Clone())
-	template.Must(t.New("content").Parse(string(data)))
+	template.Must(t.New("content").Funcs(v.functions).Parse(string(data)))
 
 	r := &Route{
 		Type: routeTypePage,
@@ -78,7 +78,7 @@ func (v *Verb) Component(file string, hx *htmx.Htmx) *Route {
 	r := &Route{
 		Type: routeTypeComponent,
 		URL:  url,
-		tmpl: hx.Build(string(data)),
+		tmpl: hx.Build(string(data), v.functions),
 	}
 	r.Bridge(hx)
 
