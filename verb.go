@@ -23,16 +23,17 @@ type Verb struct {
 }
 
 type Settings struct {
-	Templates string
-	Static    string
-	Bridges   []Bridge
+	Templates  string
+	Static     string
+	Bridges    []Bridge
+	LiveReload bool
 }
 
 func relativeFilePath(root, path string) string {
 	root = strings.TrimRight(root, "/")
 	path = strings.TrimLeft(path, "/")
 
-	return root + path
+	return root + string(os.PathSeparator) + path
 }
 
 func New(address string, port int, s Settings) *Verb {
@@ -78,6 +79,21 @@ func (v *Verb) handle(w http.ResponseWriter, r *http.Request) error {
 	if !ok {
 		http.NotFound(w, r)
 		return nil
+	}
+
+	if v.Settings.LiveReload {
+		data, err := os.ReadFile(route.originalFile)
+		if err != nil {
+			return err
+		}
+
+		if route.hx != nil {
+			route.tmpl = route.hx.Build(string(data), v.functions)
+		} else {
+			t := template.Must(v.base.Clone())
+			template.Must(t.New("content").Funcs(v.functions).Parse(string(data)))
+			route.tmpl = t
+		}
 	}
 
 	model := make(map[string]any)

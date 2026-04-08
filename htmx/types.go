@@ -10,6 +10,7 @@ import (
 const (
 	hxWrapper = `
 	{{- define "attrs" -}}
+		{{- if .Htmx.Class }} class="{{ .Htmx.Class }}" {{ end -}}
 		style="padding: 0; margin: 0;"
 		{{- if and .Htmx.HxAjax (ne .Htmx.HxAjax.Method "none") }} hx-{{ .Htmx.HxAjax.Method }}="{{ .Htmx.HxAjax.URL }}"{{ end -}}
 		{{- if .Htmx.HxTrigger }} hx-trigger="{{ .Htmx.HxTrigger }}"{{ end -}}
@@ -51,6 +52,7 @@ type Htmx struct {
 	HxTarget       string
 	HxSwap         string
 	HxInclude      string
+	Class          string
 }
 
 func (hx Htmx) Data(w http.ResponseWriter, r *http.Request) (any, error) {
@@ -108,6 +110,11 @@ func (h *Htmx) Swap(swap string) *Htmx {
 
 func (h *Htmx) Include(include string) *Htmx {
 	h.HxInclude = include
+	return h
+}
+
+func (h *Htmx) Classes(classes ...string) *Htmx {
+	h.Class = strings.Join(classes, " ")
 	return h
 }
 

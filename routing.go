@@ -23,7 +23,9 @@ type Route struct {
 	URL     string
 	Bridges []Bridge
 
-	tmpl *template.Template
+	originalFile string
+	hx           *htmx.Htmx
+	tmpl         *template.Template
 }
 
 func (r *Route) Bridge(b Bridge) *Route {
@@ -44,9 +46,10 @@ func (v *Verb) Page(url string, file string) *Route {
 	template.Must(t.New("content").Funcs(v.functions).Parse(string(data)))
 
 	r := &Route{
-		Type: routeTypePage,
-		URL:  url,
-		tmpl: t,
+		Type:         routeTypePage,
+		URL:          url,
+		tmpl:         t,
+		originalFile: file,
 	}
 
 	v.routes[url] = r
@@ -76,9 +79,11 @@ func (v *Verb) Component(file string, hx *htmx.Htmx) *Route {
 	// this is the route object that will be used as a blueprint  to
 	// perform the actual routing.
 	r := &Route{
-		Type: routeTypeComponent,
-		URL:  url,
-		tmpl: hx.Build(string(data), v.functions),
+		Type:         routeTypeComponent,
+		URL:          url,
+		tmpl:         hx.Build(string(data), v.functions),
+		originalFile: file,
+		hx:           hx,
 	}
 	r.Bridge(hx)
 
