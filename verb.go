@@ -67,14 +67,6 @@ func New(address string, port int, s Settings) *Verb {
 	}
 }
 
-// A bridge is used to populate templates. It requires two functions, one
-// for specifying the data to be passed to the template, and another for specifying
-// the name.
-type Bridge interface {
-	Data(http.ResponseWriter, *http.Request) (any, error)
-	Name() string
-}
-
 func (v Verb) Serve() error {
 	return v.router.Start()
 }
@@ -107,24 +99,8 @@ func (v *Verb) handle(w http.ResponseWriter, r *http.Request) error {
 
 	model := make(map[string]any)
 
-	// now we are going to run the global bridges, these are
-	// global to the entire app (middleware).
-	for _, bridge := range v.Settings.Bridges {
-		data, err := bridge.Data(w, r)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return err
-		}
-
-		if data != nil {
-			model[bridge.Name()] = data
-		}
-	}
-
-	// now we are going to run the route specific bridges, these
-	// are local to the route.
-	for _, bridge := range route.Bridges {
-		data, err := bridge.Data(w, r)
+	for _, bridge := range append(v.Settings.Bridges, route.Bridges...) {
+		data, err := bridge.Data(w, r, model)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return err
@@ -140,4 +116,16 @@ func (v *Verb) handle(w http.ResponseWriter, r *http.Request) error {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 	return nil
+}
+
+func (v *Verb) Import(pkg Package) {
+	routes := pkg.Routes()
+	for _, r := range routes {
+		v.routes[r.URL] = r
+		v.router.Add(pbf.RouteOptions{
+			Method:   http.MethodGet,
+			Endpoint: r.URL,
+			Handler:  v.handle,
+		})
+	}
 }

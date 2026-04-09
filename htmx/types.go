@@ -74,7 +74,7 @@ type Htmx struct {
 	Class          string
 }
 
-func (hx Htmx) Data(w http.ResponseWriter, r *http.Request) (any, error) {
+func (hx Htmx) Data(w http.ResponseWriter, r *http.Request, model map[string]any) (any, error) {
 	return hx, nil
 }
 
