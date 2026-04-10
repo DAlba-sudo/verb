@@ -34,7 +34,7 @@ const (
 	`
 	hxWrapperV2 = `
 	 <%s style="padding: 0; margin: 0;"
-		{{- if and .Htmx.HxAjax (eq .Htmx.HxAjax.Method "none" ) -}}
+		{{- if and .Htmx.HxAjax -}}
 		hx-{{ .Htmx.HxAjax.Method }}="{{ .Htmx.HxAjax.URL }}"
 		{{- end }}
 		{{ if .Htmx.HxTrigger -}}
