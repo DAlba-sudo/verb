@@ -60,10 +60,11 @@ func New(address string, port int, s Settings) *Verb {
 	}
 
 	return &Verb{
-		Settings: s,
-		router:   r,
-		routes:   make(map[string]*Route),
-		base:     template.Must(template.New("base").Parse(string(data))),
+		Settings:  s,
+		router:    r,
+		routes:    make(map[string]*Route),
+		base:      template.Must(template.New("base").Parse(string(data))),
+		functions: make(map[string]any),
 	}
 }
 
