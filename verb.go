@@ -2,11 +2,19 @@ package verb
 
 import (
 	"html/template"
+	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"strings"
 
 	"github.com/DAlba-sudo/pbf"
+)
+
+var (
+	logger = slog.New(slog.NewJSONHandler(log.Writer(), &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
 )
 
 // Verb is an htmx web server framework for Go. It provides a simple
@@ -103,15 +111,27 @@ func (v *Verb) handle(w http.ResponseWriter, r *http.Request) error {
 	for _, bridge := range append(v.Settings.Bridges, route.Bridges...) {
 		data, err := bridge.Data(w, r, model)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return err
+			logger.Error("error in bridge, halting bridge execution", "bridge", bridge.Name(), "error", err)
+			if route.Error != nil {
+				v, err := route.Error.Data(w, r, model)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+				}
+
+				model[route.Error.Name()] = v
+			}
+
+			break
 		}
 
 		if data != nil {
 			model[bridge.Name()] = data
+		} else {
+			logger.Debug("bridge returned nil data, skipping", "bridge", bridge.Name())
 		}
 	}
 
+	logger.Debug("rendering template", "route", route.URL, "model", model)
 	err := route.tmpl.Execute(w, model)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
