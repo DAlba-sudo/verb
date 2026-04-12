@@ -1,6 +1,7 @@
 package htmx
 
 import (
+	"encoding/json"
 	"html/template"
 	"net/http"
 
@@ -46,6 +47,9 @@ const (
 		{{ if .Htmx.HxSwap -}}
 		hx-swap="{{ .Htmx.HxSwap }}"
 		{{- end }}
+		{{ if .Htmx.HxVals -}}
+		hx-vals='{{ .Htmx.HxVals }}'
+		{{- end }}
 		{{ if .Htmx.HxInclude -}}
 		hx-include="{{ .Htmx.HxInclude -}}"
 		{{- end -}}>{{ template "content" . }}</%s>
@@ -71,10 +75,22 @@ type Htmx struct {
 	HxTarget       string
 	HxSwap         string
 	HxInclude      string
+	HxVals         string
 	Class          string
+
+	HxRedoEncode bool
 }
 
 func (hx Htmx) Data(w http.ResponseWriter, r *http.Request, model map[string]any) (any, error) {
+	// we want to encode the hx request metadata in case we need to redo the request.
+
+	if hx.HxRedoEncode {
+		if err := r.ParseForm(); err != nil {
+			return nil, err
+		}
+
+		hx.Vals(r.Form)
+	}
 	return hx, nil
 }
 
@@ -134,6 +150,21 @@ func (h *Htmx) Include(include string) *Htmx {
 
 func (h *Htmx) Classes(classes ...string) *Htmx {
 	h.Class = strings.Join(classes, " ")
+	return h
+}
+
+func (h *Htmx) Vals(vals any) *Htmx {
+	data, err := json.Marshal(vals)
+	if err != nil {
+		return h
+	}
+
+	h.HxVals = string(data)
+	return h
+}
+
+func (h *Htmx) SelfEncodeRequest() *Htmx {
+	h.HxRedoEncode = true
 	return h
 }
 
