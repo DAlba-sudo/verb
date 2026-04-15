@@ -113,12 +113,16 @@ func (v *Verb) handle(w http.ResponseWriter, r *http.Request) error {
 		if err != nil {
 			logger.Error("error in bridge, halting bridge execution", "bridge", bridge.Name(), "error", err)
 			if route.Error != nil {
-				v, err := route.Error.Data(w, r, model)
-				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
+				for _, err_handler := range route.Error {
+					v, err := err_handler.Data(w, r, model)
+					if err != nil {
+						logger.Error("error in error handler, halting error handler execution", "error_handler", err_handler.Name(), "error", err)
+						// http.Error(w, err.Error(), http.StatusInternalServerError)
+					}
+
+					model[err_handler.Name()] = v
 				}
 
-				model[route.Error.Name()] = v
 			}
 
 			break

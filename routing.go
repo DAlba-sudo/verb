@@ -22,7 +22,7 @@ type Route struct {
 	Type    string
 	URL     string
 	Bridges []Bridge
-	Error   Bridge
+	Error   []Bridge
 
 	originalFile string
 	hx           *htmx.Htmx
@@ -31,7 +31,7 @@ type Route struct {
 
 // the following bridge will be executed if there is an error in the route.
 func (r *Route) OnError(b Bridge) *Route {
-	r.Error = b
+	r.Error = append(r.Error, b)
 	return r
 }
 
