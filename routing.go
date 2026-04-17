@@ -68,6 +68,24 @@ func (v *Verb) Page(url string, file string) *Route {
 	return r
 }
 
+// An "Action" is similar to a component or a page, but it does not
+// expect to render a tempalte. Instead, it allows direct configuration
+// of the method that the route expects and it passes a generic handler
+// to execute, on top of potential bridges.
+func (v *Verb) Action(method string, url string, handler func(http.ResponseWriter, *http.Request) error) *Route {
+	r := &Route{
+		Type: "action",
+		URL:  url,
+	}
+
+	v.router.Add(pbf.RouteOptions{
+		Method:   method,
+		Endpoint: url,
+		Handler:  handler,
+	})
+	return r
+}
+
 // A component _can be_ an htmx item, but it doesn't have to be. The idea
 // is that it won't pull from the base template and it will be exposed
 // using a pre-made htmx route.
