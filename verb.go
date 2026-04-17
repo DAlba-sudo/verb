@@ -117,7 +117,6 @@ func (v *Verb) handle(w http.ResponseWriter, r *http.Request) error {
 					v, err := err_handler.Data(w, r, model)
 					if err != nil {
 						logger.Error("error in error handler, halting error handler execution", "error_handler", err_handler.Name(), "error", err)
-						// http.Error(w, err.Error(), http.StatusInternalServerError)
 					}
 
 					model[err_handler.Name()] = v

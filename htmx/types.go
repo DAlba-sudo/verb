@@ -79,6 +79,7 @@ type Htmx struct {
 	Class          string
 
 	HxRedoEncode bool
+	HxHeaders    map[string]string
 }
 
 func (hx Htmx) Data(w http.ResponseWriter, r *http.Request, model map[string]any) (any, error) {
@@ -187,6 +188,12 @@ func (h *Htmx) Build(content string, funcs map[string]any) *template.Template {
 	}
 
 	return t
+}
+
+func (h *Htmx) Header(key string, value string) *Htmx {
+	h.HxHeaders[key] = value
+
+	return h
 }
 
 func Div() *Htmx {
