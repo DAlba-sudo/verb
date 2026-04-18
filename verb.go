@@ -91,7 +91,7 @@ func (v *Verb) handle(w http.ResponseWriter, r *http.Request) error {
 		return nil
 	}
 
-	if v.Settings.LiveReload {
+	if v.Settings.LiveReload && route.Type != "action" {
 		data, err := os.ReadFile(relativeFilePath(v.Settings.Templates, route.originalFile))
 		if err != nil {
 			return err
@@ -107,7 +107,6 @@ func (v *Verb) handle(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	model := make(map[string]any)
-
 	for _, bridge := range append(v.Settings.Bridges, route.Bridges...) {
 		data, err := bridge.Data(w, r, model)
 		if err != nil {
@@ -131,6 +130,12 @@ func (v *Verb) handle(w http.ResponseWriter, r *http.Request) error {
 			model[bridge.Name()] = data
 		} else {
 			logger.Debug("bridge returned nil data, skipping", "bridge", bridge.Name())
+		}
+	}
+
+	if route.Type == "action" {
+		if err := route.handler(w, r); err != nil {
+			logger.Error("error in action handler", "route", route.URL, "error", err)
 		}
 	}
 

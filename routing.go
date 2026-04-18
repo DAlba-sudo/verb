@@ -13,6 +13,7 @@ import (
 const (
 	routeTypeComponent = "component"
 	routeTypePage      = "page"
+	routeTypeAction    = "action"
 )
 
 // This is the basic routing component that will
@@ -26,6 +27,7 @@ type Route struct {
 
 	originalFile string
 	hx           *htmx.Htmx
+	handler      func(http.ResponseWriter, *http.Request) error
 	tmpl         *template.Template
 }
 
@@ -76,12 +78,14 @@ func (v *Verb) Action(method string, url string, handler func(http.ResponseWrite
 	r := &Route{
 		Type: "action",
 		URL:  url,
+		tmpl: htmx.Create("div").Build("", v.functions),
 	}
 
+	v.routes[url] = r
 	v.router.Add(pbf.RouteOptions{
 		Method:   method,
 		Endpoint: url,
-		Handler:  handler,
+		Handler:  v.handle,
 	})
 	return r
 }

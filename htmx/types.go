@@ -84,7 +84,6 @@ type Htmx struct {
 
 func (hx Htmx) Data(w http.ResponseWriter, r *http.Request, model map[string]any) (any, error) {
 	// we want to encode the hx request metadata in case we need to redo the request.
-
 	if hx.HxRedoEncode {
 		if err := r.ParseForm(); err != nil {
 			return nil, err
@@ -92,6 +91,11 @@ func (hx Htmx) Data(w http.ResponseWriter, r *http.Request, model map[string]any
 
 		hx.Vals(r.Form)
 	}
+
+	for k, v := range hx.HxHeaders {
+		w.Header().Set(k, v)
+	}
+
 	return hx, nil
 }
 
