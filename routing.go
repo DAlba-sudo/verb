@@ -76,9 +76,10 @@ func (v *Verb) Page(url string, file string) *Route {
 // to execute, on top of potential bridges.
 func (v *Verb) Action(method string, url string, handler func(http.ResponseWriter, *http.Request) error) *Route {
 	r := &Route{
-		Type: "action",
-		URL:  url,
-		tmpl: htmx.Create("div").Build("", v.functions),
+		Type:    "action",
+		URL:     url,
+		tmpl:    htmx.Create("div").Build("", v.functions),
+		handler: handler,
 	}
 
 	v.routes[url] = r
