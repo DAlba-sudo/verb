@@ -134,8 +134,13 @@ func (v *Verb) handle(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	if route.Type == "action" {
-		if err := route.handler(w, r); err != nil {
+		var err error
+		if err = route.handler(w, r); err != nil {
 			logger.Error("error in action handler", "route", route.URL, "error", err)
+		}
+
+		if route.Type == "action-classic" {
+			return err
 		}
 	}
 

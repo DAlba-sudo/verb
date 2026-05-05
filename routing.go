@@ -70,6 +70,23 @@ func (v *Verb) Page(url string, file string) *Route {
 	return r
 }
 
+func (v *Verb) ActionClassic(method string, url string, handler func(http.ResponseWriter, *http.Request) error) *Route {
+	r := &Route{
+		Type:    "action-classic",
+		URL:     url,
+		handler: handler,
+	}
+
+	v.routes[url] = r
+	v.router.Add(pbf.RouteOptions{
+		Method:   method,
+		Endpoint: url,
+		Handler:  v.handle,
+	})
+
+	return r
+}
+
 // An "Action" is similar to a component or a page, but it does not
 // expect to render a tempalte. Instead, it allows direct configuration
 // of the method that the route expects and it passes a generic handler
