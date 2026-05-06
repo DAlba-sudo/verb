@@ -91,7 +91,7 @@ func (v *Verb) handle(w http.ResponseWriter, r *http.Request) error {
 		return nil
 	}
 
-	if v.Settings.LiveReload && route.Type != "action" {
+	if v.Settings.LiveReload && (route.Type != "action" && route.Type != "action-classic") {
 		data, err := os.ReadFile(relativeFilePath(v.Settings.Templates, route.originalFile))
 		if err != nil {
 			return err
@@ -133,7 +133,7 @@ func (v *Verb) handle(w http.ResponseWriter, r *http.Request) error {
 		}
 	}
 
-	if route.Type == "action" {
+	if route.Type == "action" || route.Type == "action-classic" {
 		var err error
 		if err = route.handler(w, r); err != nil {
 			logger.Error("error in action handler", "route", route.URL, "error", err)
