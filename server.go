@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -16,8 +17,6 @@ var (
 type Server struct {
 	Map   map[string](map[string]*Route)
 	Funcs template.FuncMap
-
-	Start ServerStartOptions
 }
 
 func CreateServer() *Server {
@@ -29,27 +28,48 @@ func CreateServer() *Server {
 	return s
 }
 
-type ServerStartOptions struct {
-	Reload bool
-}
-
-func (s *Server) Register(method string, url string, templatePath string) (*Route, error) {
+func (s *Server) Register(method string, url string, templatePaths ...string) (*Route, error) {
 	route := &Route{}
+	var tmpl *template.Template
 
 	// read content from file
-	data, err := os.ReadFile(templatePath)
-	if err != nil {
-		return nil, err
+	for _, templatePath := range templatePaths {
+		data, err := os.ReadFile(templatePath)
+		if err != nil {
+			return nil, err
+		}
+
+		name := filepath.Base(templatePath)
+
+		// build the template
+		if tmpl == nil {
+			tmpl, err = template.New(name).Funcs(s.Funcs).Parse(string(data))
+		} else {
+			_, err = tmpl.New(name).Funcs(s.Funcs).Parse(string(data))
+		}
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	// build the template
-	tmpl, err := template.New("content").Funcs(s.Funcs).Parse(string(data))
-	if err != nil {
-		return nil, err
-	}
 	route.Template = tmpl
 
 	// register route
+	endpoints, ok := s.Map[url]
+	if !ok {
+		s.Map[url] = make(map[string]*Route)
+		endpoints = s.Map[url]
+	}
+	endpoints[method] = route
+
+	return route, nil
+}
+
+func (s *Server) API(method string, url string, handler func(w http.ResponseWriter, r *http.Request) error) (*Route, error) {
+	route := &Route{
+		Handler: handler,
+	}
+
 	endpoints, ok := s.Map[url]
 	if !ok {
 		s.Map[url] = make(map[string]*Route)
@@ -75,7 +95,7 @@ func (s *Server) defaultHandler(route *Route, w http.ResponseWriter, r *http.Req
 		model[key] = data
 	}
 
-	return route.Template.ExecuteTemplate(w, "content", model)
+	return route.Template.Execute(w, model)
 }
 
 func (s Server) handleRequest(w http.ResponseWriter, r *http.Request) {
