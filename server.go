@@ -15,17 +15,29 @@ var (
 )
 
 type Server struct {
-	Map   map[string](map[string]*Route)
-	Funcs template.FuncMap
+	Map     map[string](map[string]*Route)
+	Funcs   template.FuncMap
+	Options ServerOptions
 }
 
-func CreateServer() *Server {
+type ServerOptions struct {
+	StaticFilesDir string
+}
+
+func CreateServer(static string) *Server {
 	s := &Server{
 		Map:   make(map[string](map[string]*Route)),
 		Funcs: make(template.FuncMap),
+		Options: ServerOptions{
+			StaticFilesDir: static,
+		},
 	}
 
 	return s
+}
+
+func (s *Server) Func(key string, fn any) {
+	s.Funcs[key] = fn
 }
 
 func (s *Server) Register(method string, url string, templatePaths ...string) (*Route, error) {
@@ -128,6 +140,7 @@ func normalizeURL(url string) string {
 func (s *Server) Serve(address string) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", s.handleRequest)
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(s.Options.StaticFilesDir))))
 
 	return http.ListenAndServe(address, mux)
 }
