@@ -21,7 +21,8 @@ type Server struct {
 }
 
 type ServerOptions struct {
-	StaticFilesDir string
+	StaticFilesDir  string
+	ReloadTemplates bool
 }
 
 func CreateServer(static string) *Server {
@@ -40,12 +41,11 @@ func (s *Server) Func(key string, fn any) {
 	s.Funcs[key] = fn
 }
 
-func (s *Server) Register(method string, url string, templatePaths ...string) (*Route, error) {
-	route := &Route{}
+func filesToTemplates(files []string, funcs template.FuncMap) (*template.Template, error) {
 	var tmpl *template.Template
 
 	// read content from file
-	for _, templatePath := range templatePaths {
+	for _, templatePath := range files {
 		data, err := os.ReadFile(templatePath)
 		if err != nil {
 			return nil, err
@@ -55,13 +55,28 @@ func (s *Server) Register(method string, url string, templatePaths ...string) (*
 
 		// build the template
 		if tmpl == nil {
-			tmpl, err = template.New(name).Funcs(s.Funcs).Parse(string(data))
+			tmpl, err = template.New(name).Funcs(funcs).Parse(string(data))
 		} else {
-			_, err = tmpl.New(name).Funcs(s.Funcs).Parse(string(data))
+			_, err = tmpl.New(name).Funcs(funcs).Parse(string(data))
 		}
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	return tmpl, nil
+}
+
+func (s *Server) Register(method string, url string, templatePaths ...string) (*Route, error) {
+	route := &Route{
+		Metadata: routeMetadata{
+			OriginalTemplatePaths: templatePaths,
+		},
+	}
+
+	tmpl, err := filesToTemplates(templatePaths, s.Funcs)
+	if err != nil {
+		return nil, err
 	}
 
 	route.Template = tmpl
@@ -95,6 +110,13 @@ func (s *Server) API(method string, url string, handler func(w http.ResponseWrit
 func (s *Server) defaultHandler(route *Route, w http.ResponseWriter, r *http.Request) error {
 	if route.Template == nil {
 		return ErrTemplateNotFound
+	}
+
+	if s.Options.ReloadTemplates {
+		tmpl, err := filesToTemplates(route.Metadata.OriginalTemplatePaths, s.Funcs)
+		if err == nil {
+			route.Template = tmpl
+		}
 	}
 
 	model := map[string]any{}

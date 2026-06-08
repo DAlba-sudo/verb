@@ -6,7 +6,7 @@ import (
 )
 
 type routeMetadata struct {
-	OriginalTemplatePath string
+	OriginalTemplatePaths []string
 }
 
 type Route struct {
